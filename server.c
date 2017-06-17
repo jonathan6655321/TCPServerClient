@@ -29,6 +29,7 @@
 statistics globalStats = {{0},0,0};
 pthread_mutex_t lock;
 int socketfd = -1;
+int activeThreads = 0;
 
 
 
@@ -51,8 +52,11 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 
-	pthread_t threads[MAX_THREAD_NUM];
+
+//	pthread_t threads[MAX_THREAD_NUM];
 	int threadNumber = 0;
+	pthread_t thread;
+
 	while(1)
 	{
 		struct sockaddr_in clientAddr;
@@ -73,7 +77,8 @@ int main(int argc, char **argv) {
 		}
 
 		int res;
-		res = pthread_create(&threads[threadNumber], NULL, processMessage, (void *) &connectionfd);
+//		res = pthread_create(&threads[threadNumber], NULL, processMessage, (void *) &connectionfd);
+		res = pthread_create(&thread, NULL, processMessage, (void *) &connectionfd);
 		if (res)
 		{
 			printf("Error: pthread create failed\n");
@@ -84,21 +89,26 @@ int main(int argc, char **argv) {
 
 	}
 
-	// wait for threads:
-	int j;
-	for (j=0; j<threadNumber; j++)
+
+	while (activeThreads > 0)
 	{
-		void* status;
-	    int res = pthread_join(threads[j], &status);
-	    if (res)
-	    {
-	    	printf("res: %d\n", res);
-
-
-	      printf( "ERROR in pthread_join(): %s\n", strerror(res));
-	      return -1;
-	    }
+		sleep(1);
 	}
+//	// wait for threads:
+//	int j;
+//	for (j=0; j<threadNumber; j++)
+//	{
+//		void* status;
+//	    int res = pthread_join(threads[j], &status);
+//	    if (res)
+//	    {
+//	    	printf("res: %d\n", res);
+//
+//
+//	      printf( "ERROR in pthread_join(): %s\n", strerror(res));
+//	      return -1;
+//	    }
+//	}
 
 	printf("\ntotal bytes counted: %d\nprintable bytes counted: %d\nwe saw:\n",
 			globalStats.bytesCounted, globalStats.printableBytesCounted);
@@ -173,6 +183,7 @@ void initSockAddr(struct sockaddr_in *addr)
 
 void *processMessage(void *connectionfd)
 {
+	activeThreads++;
 	int * confd = connectionfd;
 	statistics localStats = {{0},0};
 	char buf[MAX_MESSAGE_SIZE];
@@ -182,6 +193,7 @@ void *processMessage(void *connectionfd)
 	if (bytesRead < 0)
 	{
 		printf("Error: read failed\n");
+		activeThreads--;
 		return NULL;
 	}
 
@@ -201,15 +213,18 @@ void *processMessage(void *connectionfd)
 	if (write(*confd, message, MAX_MESSAGE_SIZE) < 0)
 	{
 		printf("Error: write failed\n");
+		activeThreads--;
 		return NULL;
 	}
 	close(*confd);
 
 	if (updateGlobalStats(localStats) < 0)
 	{
+		activeThreads--;
 		return NULL;
 	}
 
+	activeThreads--;
 	return NULL;
 }
 
