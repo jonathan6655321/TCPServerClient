@@ -78,7 +78,7 @@ int main(int argc, char **argv) {
 
 		int res;
 //		res = pthread_create(&threads[threadNumber], NULL, processMessage, (void *) &connectionfd);
-		res = pthread_create(&thread, NULL, processMessage, (void *) &connectionfd);
+		res = pthread_create(&thread, NULL, processData, (void *) &connectionfd);
 		if (res)
 		{
 			printf("Error: pthread create failed\n");
@@ -181,36 +181,55 @@ void initSockAddr(struct sockaddr_in *addr)
 	(*addr).sin_addr.s_addr = htonl(INADDR_ANY);
 }
 
-void *processMessage(void *connectionfd)
+void *processData(void *connectionfd)
 {
 	activeThreads++;
 	int * confd = connectionfd;
-	statistics localStats = {{0},0};
+	statistics localStats = {{0},0,0};
 	char buf[MAX_MESSAGE_SIZE];
-	int bytesRead,i;
 
-	bytesRead = read(*confd, buf, MAX_MESSAGE_SIZE);
-	if (bytesRead < 0)
+	int totalBytesToRead;
+	if (read(*confd, &totalBytesToRead, sizeof(int)) != sizeof(int))
 	{
-		printf("Error: read failed\n");
+		printf("Error: read size failed\n");
 		activeThreads--;
 		return NULL;
 	}
 
-	for (i=0; i < bytesRead; i++)
+	totalBytesToRead = 100000000; // TODO erase this
+	printf("%d\n", totalBytesToRead);
+
+	int bytesSuccesfullyRead = 0;
+	int currentNumBytesRead = 0;
+	while (bytesSuccesfullyRead < totalBytesToRead)
 	{
-		localStats.bytesCounted++;
-		if( buf[i] >= PRINTABLE_MIN && buf[i] <= PRINTABLE_MAX)
+		printf("HI\n");
+		currentNumBytesRead = read(*confd, buf,
+				(MAX_MESSAGE_SIZE <(totalBytesToRead - bytesSuccesfullyRead))?MAX_MESSAGE_SIZE:(totalBytesToRead - bytesSuccesfullyRead));
+		if (currentNumBytesRead < 0)
 		{
-			localStats.printableBytesCounted++;
-			localStats.countPerChar[(int) buf[i]]++;
+			printf("Error: read failed: %s\n", strerror(errno));
+			activeThreads--;
+			return NULL;
+		}
+
+		bytesSuccesfullyRead += currentNumBytesRead;
+
+		printf("hi2\n");
+		int i;
+		for (i=0; i < currentNumBytesRead; i++)
+		{
+			localStats.bytesCounted++;
+			if( buf[i] >= PRINTABLE_MIN && buf[i] <= PRINTABLE_MAX)
+			{
+				localStats.printableBytesCounted++;
+				localStats.countPerChar[(int) buf[i]]++;
+			}
 		}
 	}
 
-	char message[MAX_MESSAGE_SIZE];
-	sprintf(message, "FROM SERVER: number of printable chars: %d\n", localStats.printableBytesCounted);
-
-	if (write(*confd, message, MAX_MESSAGE_SIZE) < 0)
+	printf("hi3\n");
+	if (write(*confd, &localStats.printableBytesCounted, sizeof(int)) != sizeof(int))
 	{
 		printf("Error: write failed\n");
 		activeThreads--;

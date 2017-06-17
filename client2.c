@@ -24,7 +24,7 @@
 #include <signal.h>
 #include <pthread.h>
 
-#include "client.h"
+#include "client2.h"
 
 // assumes an integer argument.
 int main(int argc, char **argv) {

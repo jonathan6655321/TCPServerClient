@@ -26,7 +26,7 @@
 #include <pthread.h>
 
 // "/dev/urandom"
-#define INPUT_ADDRESS "/dev/urandom"
+#define INPUT_ADDRESS "/dev/random"
 #define SERVER_PORT 2233
 
 // same in server:

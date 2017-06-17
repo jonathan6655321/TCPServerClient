@@ -31,6 +31,7 @@
 #define PRINTABLE_MAX 126
 #define MAX_THREAD_NUM 32
 #define PORT_NUMBER 2233
+// same in client!
 #define MAX_MESSAGE_SIZE 1024
 
 typedef struct  statistics {
@@ -47,7 +48,7 @@ int initListenToPort();
 
 void initSockAddr(struct sockaddr_in *addr);
 
-void * processMessage(void *connectionfd);
+void * processData(void *connectionfd);
 
 int updateGlobalStats(statistics localStats);
 
