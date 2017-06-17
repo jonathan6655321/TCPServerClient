@@ -5,8 +5,8 @@
  *      Author: Jonathan
  */
 
-#ifndef SERVER_H_
-#define SERVER_H_
+#ifndef RCC_SERVER_H_
+#define RCC_SERVER_H_
 
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -25,6 +25,9 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <pthread.h>
+
+// boolean for printing log: request arrived, response sent etc.
+#define LOG 0
 
 #define ASCI_ALPHABET_SIZE 512
 #define PRINTABLE_MIN 32
@@ -52,4 +55,10 @@ void * processData(void *connectionfd);
 
 int updateGlobalStats(statistics localStats);
 
-#endif /* SERVER_H_ */
+int waitForAllThreadsToFinish(void);
+
+int signalNoActiveThreads(void);
+
+void printGlobalStats(void);
+
+#endif /* RCC_SERVER_H_ */

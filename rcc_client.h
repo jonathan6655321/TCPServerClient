@@ -5,8 +5,8 @@
  *      Author: Jonathan
  */
 
-#ifndef CLIENT_H_
-#define CLIENT_H_
+#ifndef RCC_CLIENT_H_
+#define RCC_CLIENT_H_
 
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -25,10 +25,9 @@
 #include <fcntl.h>
 #include <pthread.h>
 
-// "/dev/urandom"
 #define INPUT_ADDRESS "/dev/urandom"
 #define SERVER_PORT 2233
-
+#define SERVER_IP_ADDRESS "127.0.0.1"
 // same in server:
 #define MAX_MESSAGE_SIZE 1024
 
@@ -46,4 +45,4 @@ int getResponse(int *response, int serverfd);
 int transferDataToServer(int numBytesToWrite, int clientSocketfd);
 
 
-#endif /* CLIENT_H_ */
+#endif /* RCC_CLIENT_H_ */

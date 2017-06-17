@@ -5,8 +5,6 @@
  *      Author: Jonathan
  */
 
-#include "server.h"
-
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
@@ -24,10 +22,12 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <pthread.h>
+#include "rcc_server.h"
 
 
 statistics globalStats = {{0},0,0};
 pthread_mutex_t lock;
+pthread_cond_t cond;
 int socketfd = -1;
 int activeThreads = 0;
 
@@ -77,49 +77,20 @@ int main(int argc, char **argv) {
 		}
 
 		int res;
-//		res = pthread_create(&threads[threadNumber], NULL, processMessage, (void *) &connectionfd);
 		res = pthread_create(&thread, NULL, processData, (void *) &connectionfd);
 		if (res)
 		{
 			printf("Error: pthread create failed\n");
 			return -1;
 		}
-		printf("received a message, thread made is: %d\n", threadNumber);
+
 		threadNumber++;
 
 	}
 
+	waitForAllThreadsToFinish();
 
-	while (activeThreads > 0)
-	{
-		sleep(1);
-	}
-//	// wait for threads:
-//	int j;
-//	for (j=0; j<threadNumber; j++)
-//	{
-//		void* status;
-//	    int res = pthread_join(threads[j], &status);
-//	    if (res)
-//	    {
-//	    	printf("res: %d\n", res);
-//
-//
-//	      printf( "ERROR in pthread_join(): %s\n", strerror(res));
-//	      return -1;
-//	    }
-//	}
-
-	printf("\ntotal bytes counted: %d\nprintable bytes counted: %d\nwe saw:\n",
-			globalStats.bytesCounted, globalStats.printableBytesCounted);
-	int k;
-	for (k=PRINTABLE_MIN; k <= PRINTABLE_MAX; k++)
-	{
-		if (globalStats.countPerChar[k] != 0)
-		{
-			printf("\t%d %c's\n", globalStats.countPerChar[k], (char) k);
-		}
-	}
+	printGlobalStats();
 
 	pthread_mutex_destroy(&lock);
 	pthread_exit(NULL);
@@ -196,7 +167,10 @@ void *processData(void *connectionfd)
 		return NULL;
 	}
 
-	printf("%d\n", totalBytesToRead);
+	if (LOG)
+	{
+		printf("REQUEST RECEIVED >>>>>>>>>> id: %d, size: %d\n", confd, totalBytesToRead);
+	}
 
 	int bytesSuccesfullyRead = 0;
 	int currentNumBytesRead = 0;
@@ -231,6 +205,10 @@ void *processData(void *connectionfd)
 		activeThreads--;
 		return NULL;
 	}
+	if (LOG)
+	{
+		printf("RESPONSE SENT    <<<<<<<<<< id: %d\n", confd);
+	}
 	close(confd);
 
 	if (updateGlobalStats(localStats) < 0)
@@ -240,6 +218,10 @@ void *processData(void *connectionfd)
 	}
 
 	activeThreads--;
+
+	if(activeThreads == 0)
+		signalNoActiveThreads();
+
 	return NULL;
 }
 
@@ -269,4 +251,63 @@ int updateGlobalStats(statistics localStats)
       return -1;
     }
 	return 0;
+}
+
+int waitForAllThreadsToFinish(void)
+{
+    int lockRes;
+    lockRes = pthread_mutex_lock(&lock);
+    if( 0 != lockRes )
+    {
+      printf( "ERROR in pthread_mutex_lock(): %s\n", strerror( lockRes ) );
+      return -1;
+    }
+
+    while (activeThreads > 0)
+    {
+    	pthread_cond_wait(&cond, &lock);
+    }
+
+    lockRes = pthread_mutex_unlock(&lock);
+    if( 0 != lockRes )
+    {
+      printf( "ERROR in pthread_mutex_unlock(): %s\n", strerror( lockRes ) );
+      return -1;
+    }
+	return 0;
+}
+
+int signalNoActiveThreads(void)
+{
+    int lockRes;
+    lockRes = pthread_mutex_lock(&lock);
+    if( 0 != lockRes )
+    {
+      printf( "ERROR in pthread_mutex_lock(): %s\n", strerror( lockRes ) );
+      return -1;
+    }
+
+    pthread_cond_signal(&cond);
+
+    lockRes = pthread_mutex_unlock(&lock);
+    if( 0 != lockRes )
+    {
+      printf( "ERROR in pthread_mutex_unlock(): %s\n", strerror( lockRes ) );
+      return -1;
+    }
+	return 0;
+}
+
+void printGlobalStats(void)
+{
+	printf("\nTotal bytes counted: %d\nPrintable bytes counted: %d\nwe saw:\n",
+			globalStats.bytesCounted, globalStats.printableBytesCounted);
+	int k;
+	for (k=PRINTABLE_MIN; k <= PRINTABLE_MAX; k++)
+	{
+		if (globalStats.countPerChar[k] != 0)
+		{
+			printf("\t%d '%c's\n", globalStats.countPerChar[k], (char) k);
+		}
+	}
 }

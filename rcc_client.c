@@ -6,6 +6,8 @@
  */
 
 //#include <sys/socket.h>
+#include "rcc_client.h"
+
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
@@ -24,7 +26,6 @@
 #include <signal.h>
 #include <pthread.h>
 
-#include "client2.h"
 
 // assumes an integer argument.
 int main(int argc, char **argv) {
@@ -55,46 +56,20 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 
-	printf("The response is:\n%d\n", response);
+	printf("\nRESPONSE FROM SERVER:\nnumber of printable chars is %d\n", response);
 
 	close(clientSocketfd);
 
 	return 0;
 }
 
-//int getInput(unsigned int numCharsToWrite, char **buf)
-//{
-//	*buf = (char *) malloc((numCharsToWrite + 1)*sizeof(char));
-//	if (*buf == NULL)
-//	{
-//		printf("Error: malloc for buffer failed\n");
-//		return -1;
-//	}
-//
-//	int fd = open(INPUT_ADDRESS, O_RDONLY);
-//	if (fd < 0)
-//	{
-//		printf("Error: failed to open file for reading\n");
-//		return -1;
-//	}
-//
-//	if (read(fd, *buf, numCharsToWrite) != numCharsToWrite)
-//	{
-//		printf("Error: failed to read from file\n");
-//		return -1;
-//	}
-//
-//	(*buf)[numCharsToWrite] = '\0';
-//	close(fd);
-//	return 1;
-//}
 
 void initSockAddr(struct sockaddr_in *addr)
 {
 	memset( addr, '0', sizeof(*addr));
 	(*addr).sin_family = AF_INET;
 	(*addr).sin_port = htons(SERVER_PORT);
-	(*addr).sin_addr.s_addr = inet_addr("127.0.0.1");
+	(*addr).sin_addr.s_addr = inet_addr(SERVER_IP_ADDRESS);
 }
 
 int connectToServer(void)
