@@ -184,27 +184,25 @@ void initSockAddr(struct sockaddr_in *addr)
 void *processData(void *connectionfd)
 {
 	activeThreads++;
-	int * confd = connectionfd;
+	int confd = *((int *)connectionfd);
 	statistics localStats = {{0},0,0};
 	char buf[MAX_MESSAGE_SIZE];
 
 	int totalBytesToRead;
-	if (read(*confd, &totalBytesToRead, sizeof(int)) != sizeof(int))
+	if (read(confd, &totalBytesToRead, sizeof(int)) != sizeof(int))
 	{
 		printf("Error: read size failed\n");
 		activeThreads--;
 		return NULL;
 	}
 
-	totalBytesToRead = 100000000; // TODO erase this
 	printf("%d\n", totalBytesToRead);
 
 	int bytesSuccesfullyRead = 0;
 	int currentNumBytesRead = 0;
 	while (bytesSuccesfullyRead < totalBytesToRead)
 	{
-		printf("HI\n");
-		currentNumBytesRead = read(*confd, buf,
+		currentNumBytesRead = read(confd, buf,
 				(MAX_MESSAGE_SIZE <(totalBytesToRead - bytesSuccesfullyRead))?MAX_MESSAGE_SIZE:(totalBytesToRead - bytesSuccesfullyRead));
 		if (currentNumBytesRead < 0)
 		{
@@ -215,7 +213,6 @@ void *processData(void *connectionfd)
 
 		bytesSuccesfullyRead += currentNumBytesRead;
 
-		printf("hi2\n");
 		int i;
 		for (i=0; i < currentNumBytesRead; i++)
 		{
@@ -228,14 +225,13 @@ void *processData(void *connectionfd)
 		}
 	}
 
-	printf("hi3\n");
-	if (write(*confd, &localStats.printableBytesCounted, sizeof(int)) != sizeof(int))
+	if (write(confd, &localStats.printableBytesCounted, sizeof(int)) != sizeof(int))
 	{
 		printf("Error: write failed\n");
 		activeThreads--;
 		return NULL;
 	}
-	close(*confd);
+	close(confd);
 
 	if (updateGlobalStats(localStats) < 0)
 	{
