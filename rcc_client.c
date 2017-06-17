@@ -5,9 +5,6 @@
  *      Author: Jonathan
  */
 
-//#include <sys/socket.h>
-#include "rcc_client.h"
-
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
@@ -25,6 +22,28 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <pthread.h>
+
+
+// from header:
+#define INPUT_ADDRESS "/dev/urandom"
+#define SERVER_PORT 2233
+#define SERVER_IP_ADDRESS "127.0.0.1"
+// same in server:
+#define MAX_MESSAGE_SIZE 1024
+
+
+//int getInput(unsigned int numBytesToWrite, char **buf);
+
+void initSockAddr(struct sockaddr_in *addr);
+
+// returns connectionFileDescriptor
+int connectToServer(void);
+
+//writes the response into response
+int getResponse(int *response, int serverfd);
+
+int transferDataToServer(int numBytesToWrite, int clientSocketfd);
+
 
 
 // assumes an integer argument.

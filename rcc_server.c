@@ -22,7 +22,45 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <pthread.h>
-#include "rcc_server.h"
+
+
+// from header:
+
+// boolean for printing log: request arrived, response sent etc.
+#define LOG 0
+
+#define ASCI_ALPHABET_SIZE 512
+#define PRINTABLE_MIN 32
+#define PRINTABLE_MAX 126
+#define MAX_THREAD_NUM 32
+#define PORT_NUMBER 2233
+// same in client!
+#define MAX_MESSAGE_SIZE 1024
+
+typedef struct  statistics {
+	int countPerChar[ASCI_ALPHABET_SIZE];
+	int bytesCounted;
+	int printableBytesCounted;
+} statistics;
+
+int registerSignalHandler(void);
+
+void mySignalHandler(int signum, siginfo_t* info, void* ptr);
+
+int initListenToPort();
+
+void initSockAddr(struct sockaddr_in *addr);
+
+void * processData(void *connectionfd);
+
+int updateGlobalStats(statistics localStats);
+
+int waitForAllThreadsToFinish(void);
+
+int signalNoActiveThreads(void);
+
+void printGlobalStats(void);
+
 
 
 statistics globalStats = {{0},0,0};
